@@ -1,0 +1,171 @@
+#!/opt/local/bin/python
+# -*- coding: utf-8 -*-
+from tempfile import mkstemp
+from shutil import move, copy
+from os import fdopen, remove, listdir, mkdir
+from os.path import isdir, isfile, join
+from datetime import datetime
+from sys import exit, argv
+
+# --- sources ---
+
+# https://stackoverflow.com/questions/39086/search-and-replace-a-line-in-a-file-in-python
+# https://stackoverflow.com/questions/3207219/how-do-i-list-all-files-of-a-directory
+# https://stackoverflow.com/questions/3368969/find-string-between-two-substrings
+
+# --- routines ---
+
+def replace(file_path, pattern, subst):
+  # create temp file
+  fh, abs_path = mkstemp()
+  with fdopen(fh,'w') as new_file:
+    with open(file_path) as old_file:
+      new_file.write(old_file.read().replace(pattern, subst))
+  # remove original file
+  remove(file_path)
+  # move new file
+  move(abs_path, file_path)
+
+def postdate(post_path):
+  with open(post_path) as postfile:
+    for line in postfile:
+      if '<h5>' in line:
+	return line[line.index('<h5>')+4:line.rindex('</h5>')]
+
+def posttitle(post_path):
+  with open(post_path) as postfile:
+    for line in postfile:
+      if '<h3>' in line:
+	return line[line.index('<h3>')+4:line.rindex('</h3>')]
+
+def init_paragraph(file_path, text):
+  # create temp file
+  once = False
+  fh, abs_path = mkstemp()
+  with fdopen(fh,'w') as new_file:
+    with open(file_path) as old_file:
+      in_p = False
+      for line in old_file:
+        if '<p>' in line:
+          in_p = True
+          if not once:
+            new_file.write(line)
+        elif '</p>' in line:
+          in_p = False
+          if not once:
+            new_file.write(text)
+            new_file.write(line)
+            once = True
+        elif in_p:
+          continue
+        else:
+          new_file.write(line)
+  # remove original file
+  remove(file_path)
+  # move new file
+  move(abs_path, file_path)
+
+# --- main ---
+
+enmonth = ["0", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+plmonth = ["0", "Sty", "Lut", "Mar", "Kwi", "Maj", "Cze", "Lip", "Sie", "Wrz", "Paz", "Lis", "Gru"]
+now = datetime.now() # now.year, now.month, now.day, now.hour, now.minute, now.second
+
+with open('en/writing.html') as enindex:
+  for line in enindex:
+    if ('post-' in line): # find most recent post
+      post0en = line[line.index('"')+1:line.rindex('"')]
+      post0pl = post0en.replace('post','wpis').replace('writing','pisanie')
+      lastnum = int(line[line.rindex('-')+1:line.rindex('.')])
+      break
+
+year0 = int(post0en.split('-')[1])
+year1 = now.year
+if year0 == year1:
+  nextnum = lastnum + 1 # next number this year
+else:
+  nextnum = 0 # first number in new year
+
+post1en = 'writing/post-' + str(year1) + '-%d.html' % nextnum
+post1pl = 'pisanie/wpis-' + str(year1) + '-%d.html' % nextnum
+
+path0en = 'en/' + post0en
+path0pl = 'pl/' + post0pl
+path1en = 'en/' + post1en
+path1pl = 'pl/' + post1pl
+date0en = postdate(path0en)
+date0pl = postdate(path0pl)
+date1en = enmonth[now.month] + ' %d, %d' % (now.day, now.year)
+date1pl = plmonth[now.month] + ' %d, %d' % (now.day, now.year)
+title0en = posttitle(path0en)
+title0pl = posttitle(path0pl)
+
+NextEn = '''<div class="content">
+  <span style="float:right;"><a style="color:black;" href="post-%d-%d.html">Next</a></span>
+</div>
+
+</body>'''%(year1,nextnum)
+
+PrevEn = '''<div class="content">
+  <span style="float:left;"><a style="color:black;" href="post-%d-%d.html">Previous</a></span>
+</div>
+
+</body>'''
+
+PrevNext = '''<div class="content">
+  <span style="float:left;"><a style="color:black;" href="post-%d-%d.html">Previous</a></span>
+  <span style="float:right;"><a style="color:black;" href="post-%d-%d.html">Next</a></span>
+</div>
+
+</body>'''
+
+PrevNextEn = PrevNext%(year0,lastnum-1,year1,nextnum)
+PrevNextPl = PrevNext.replace('post','wpis').replace('writing','pisanie').replace('Previous','Poprzedni').replace('Next','Następny')%(year0,lastnum-1,year1,nextnum)
+PrevPl = PrevEn.replace('post','wpis').replace('writing','pisanie').replace('Previous','Poprzedni')
+NextPl = NextEn.replace('post','wpis').replace('writing','pisanie').replace('Next','Następny')
+
+if not isfile(path1en):
+  print('creating ' + path1en)
+  copy (path0en, path1en)
+  replace(path1en, post0pl, post1pl)
+  replace(path1en, date0en, date1en)
+  replace(path1en, title0en, 'Post title')
+  init_paragraph(path1en, '    Post content.\n')
+  if lastnum > 0:
+    replace(path0en, PrevEn%(year0,lastnum-1), PrevNextEn)
+    replace(path1en, PrevEn%(year0,lastnum-1), PrevEn%(year0,lastnum))
+  else: 
+    replace(path0en,'</body>', NextEn)
+    replace(path1en,'</body>', PrevEn%(year0,lastnum))
+else:
+  if '-d' in argv:
+    print('Deleting ' + path1en)
+    if lastnum > 0:
+      replace(path0en, PrevNextEn, PrevEn%(year0,lastnum-1))
+    else:
+      replace(path0en, NextEn, '</body>')
+    remove(path1en)
+  else: print(path1en + ' exists!')
+
+if not isfile(path1pl):
+  print('creating ' + path1pl)
+  copy (path0pl, path1pl)
+  replace(path1pl, post0en, post1en)
+  replace(path1pl, date0pl, date1pl)
+  replace(path1pl, title0pl, 'Tytuł postu')
+  init_paragraph(path1pl, '    Treść wpisu.\n')
+  if lastnum > 0:
+    replace(path0pl, PrevPl%(year0,lastnum-1), PrevNextPl)
+    replace(path1pl, PrevPl%(year0,lastnum-1), PrevPl%(year0,lastnum))
+  else:
+    replace(path0pl,'</body>', NextPl)
+    replace(path1pl,'</body>', PrevPl%(year0,lastnum))
+else:
+  if '-d' in argv:
+    print('Deleting ' + path1pl)
+    if lastnum > 0:
+      replace(path0pl, PrevNextPl, PrevPl%(year0,lastnum-1))
+    else:
+      replace(path0pl, NextPl, '</body>')
+    remove(path1pl)
+  else: print(path1pl + ' exists!')

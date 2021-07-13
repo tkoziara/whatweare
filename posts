@@ -1,0 +1,3 @@
+#!/bin/sh
+
+vim -o  en/writing.html pl/pisanie.html

@@ -1,0 +1,12 @@
+#!/bin/sh
+
+if [ $# -eq 0 ]; then
+n=-1
+else
+n=$1
+fi
+
+year=`date +'%Y'`
+en=`ls -t en/writing | sort -V | tail $n | head -1`
+pl=`ls -t pl/pisanie | sort -V | tail $n | head -1`
+vim -o  en/writing/$en pl/pisanie/$pl
