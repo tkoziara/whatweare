@@ -1,0 +1,23 @@
+.middle {
+  --n-menu-items: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  color: white;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 40px;
+  margin-top: max(0px,calc((100vh - 50px * (var(--n-menu-items) * 2 + 2))/2));
+}
+
+/* based on https://habr.com/en/sandbox/163605/ */
+@media (pointer: coarse)  {
+	/* mobile device */
+  @media screen and (orientation:portrait) {
+    .middle {
+      font-size: 50px;
+      margin-top: max(0px,calc((100vh - 80px * (var(--n-menu-items) * 2 + 2))/2));
+    }
+  }
+}
