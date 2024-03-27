@@ -1,0 +1,10 @@
+.pswp-gallery img {
+  padding: 5px;
+  max-width: 125px;
+}
+.pswp-gallery img:hover {
+  cursor: pointer;
+  transform: scale(1.05);
+  border-radius: 10px;
+  box-shadow: 0 50px 50px rgba(50, 50, 50, 0.5);
+}

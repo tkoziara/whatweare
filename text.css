@@ -1,0 +1,45 @@
+.middle {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: left;
+  color: white;
+  font-size: 25px;
+  margin: auto;
+  margin-left: 5%;
+  width: 80%;
+}
+
+.middle a {
+  color: white;
+}
+
+.middle img {
+  padding: 20px;
+  max-width: 80vw;
+  max-height: 80vh;
+}
+
+.img-center {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* based on https://habr.com/en/sandbox/163605/ */
+@media (pointer: coarse) {
+  /* mobile device */
+  @media screen and (orientation: portrait) {
+    .middle {
+      font-size: 45px;
+      width: 90%;
+    }
+  }
+  @media screen and (orientation: landscape) {
+    .middle {
+      font-size: 25px;
+      width: 90%;
+    }
+  }
+}
